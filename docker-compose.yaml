@@ -14,8 +14,14 @@ services:
     volumes: 
       - ./node:/usr/src/app
     tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://app:3000/healthcheck"]
+      interval: 1s
+      timeout: 3s
+      retries: 120
     depends_on: 
-       - db
+      db:
+        condition: service_healthy
   db:
     image: mysql:5.7
     command: --innodb-use-native-aio=0
@@ -27,6 +33,11 @@ services:
     environment: 
       - MYSQL_DATABASE=nodedb
       - MYSQL_ROOT_PASSWORD=root
+    healthcheck:
+      test: ["CMD", "mysql", "-u", "root", "-proot", "nodedb","-e", "SELECT 1"]
+      interval: 1s
+      timeout: 3s
+      retries: 120
     networks: 
       - node-network
 
@@ -41,7 +52,8 @@ services:
     ports: 
       - "8080:80"
     depends_on: 
-      - app
+      app:
+        condition: service_healthy
 
 networks: 
   node-network:
